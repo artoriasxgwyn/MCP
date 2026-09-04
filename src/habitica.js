@@ -147,16 +147,21 @@ export async function getDailies() {
     }
 }
 
-export async function createDaily({ text, notes, priority, frequency = "daily", everyX = 1 }) {
+export async function createDaily({ text, notes, priority, frequency = "weekly", everyX = 1, repeat }) {
     try {
-        const response = await habiticaApi.post("/tasks/user", {
+        const payload = {
             type: "daily",
             text,
             notes,
             priority,
             frequency, // "daily" o "weekly"
             everyX     // cada cuántos días/semanas se repite
-        });
+        };
+        // repeat: { su, m, t, w, th, f, s } booleanos. Si no se especifica, se repite todos los días.
+        if (frequency === "weekly") {
+            payload.repeat = repeat || { su: true, m: true, t: true, w: true, th: true, f: true, s: true };
+        }
+        const response = await habiticaApi.post("/tasks/user", payload);
         return response.data.data;
     } catch (error) {
         console.error("Error al crear daily:", error.response?.data || error.message);
@@ -164,6 +169,10 @@ export async function createDaily({ text, notes, priority, frequency = "daily", 
     }
 }
 
+/**
+ * fields puede incluir: text, notes, priority, frequency, everyX,
+ * y repeat: { su, m, t, w, th, f, s } booleanos.
+ */
 export async function updateDaily(taskId, fields) {
     try {
         const response = await habiticaApi.put(`/tasks/${taskId}`, fields);
