@@ -147,19 +147,29 @@ export async function getDailies() {
     }
 }
 
-export async function createDaily({ text, notes, priority, frequency = "weekly", everyX = 1, repeat }) {
+function buildReminder(hhmm) {
+    // hhmm: "HH:MM" -> objeto reminder de Habitica (la fecha es irrelevante, solo se usa la hora)
+    const [hours, minutes] = hhmm.split(":").map(Number);
+    const now = new Date();
+    now.setHours(hours, minutes, 0, 0);
+    return { time: now.toISOString(), startDate: now.toISOString() };
+}
+
+export async function createDaily({ text, notes, priority, frequency = "weekly", everyX = 1, repeat, reminders }) {
     try {
         const payload = {
             type: "daily",
             text,
             notes,
             priority,
-            frequency, // "daily" o "weekly"
-            everyX     // cada cuántos días/semanas se repite
+            frequency,
+            everyX
         };
-        // repeat: { su, m, t, w, th, f, s } booleanos. Si no se especifica, se repite todos los días.
         if (frequency === "weekly") {
             payload.repeat = repeat || { su: true, m: true, t: true, w: true, th: true, f: true, s: true };
+        }
+        if (reminders && reminders.length) {
+            payload.reminders = reminders.map(buildReminder);
         }
         const response = await habiticaApi.post("/tasks/user", payload);
         return response.data.data;
