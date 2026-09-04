@@ -1,234 +1,402 @@
+import http from "node:http";
 import "dotenv/config";
-import axios from "axios";
+import { z } from "zod";
+import {
+    getTasks, getTask, deleteTask,
+    addItemChecklistTasks, updateItemChecklistTasks, deleteItemChecklistTasks, scoreItemChecklistTasks,
+    getHabits, createHabit, updateHabit, scoreHabit,
+    getTodos, createTodo, updateTodo, completeTodo,
+    getDailies, createDaily, updateDaily, scoreDaily
+} from "./habitica.js";
 
-const habiticaApi = axios.create({
-    baseURL: "https://habitica.com/api/v3/",
-    headers: {
-        "x-api-user": process.env.user_id,
-        "x-api-key": process.env.token,
-        "x-client": `${process.env.user_id}-mi-app`
-    }
+import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
+import { toNodeHandler } from "@modelcontextprotocol/node";
+
+const server = new McpServer({
+    name: "habitica-mcp",
+    version: "1.0.0"
 });
 
 // ================= TAREAS (GENÉRICO) =================
 
-export async function getTasks() {
-    try {
-        const response = await habiticaApi.get("/tasks/user");
-        return response.data.data;
-    } catch (error) {
-        console.error("Error al obtener tareas:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "get_tasks",
+    {
+        description: "Obtiene todas las tareas del usuario desde Habitica (hábitos, todos, dailies, rewards)",
+        inputSchema: {}
+    },
+    async () => {
+        try {
+            const tasks = await getTasks();
+            return { content: [{ type: "text", text: JSON.stringify(tasks, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al obtener tareas: ${error.message}` }] };
+        }
     }
-}
+);
 
-export async function getTask(taskId) {
-    try {
-        const response = await habiticaApi.get(`/tasks/${taskId}`);
-        return response.data.data;
-    } catch (error) {
-        console.error("Error al obtener tarea:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "get_task",
+    {
+        description: "Obtiene una tarea específica por su ID (sirve para cualquier tipo)",
+        inputSchema: {
+            task_id: z.string().describe("El ID de la tarea")
+        }
+    },
+    async ({ task_id }) => {
+        try {
+            const response = await getTask(task_id);
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al obtener tarea: ${error.message}` }] };
+        }
     }
-}
+);
 
-export async function deleteTask(taskId) {
-    try {
-        const response = await habiticaApi.delete(`/tasks/${taskId}`);
-        return response.data;
-    } catch (error) {
-        console.error("Error al eliminar tarea:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "delete_task",
+    {
+        description: "Elimina una tarea en Habitica (sirve para cualquier tipo: hábito, todo, daily o reward)",
+        inputSchema: {
+            task_id: z.string().describe("El ID de la tarea a eliminar")
+        }
+    },
+    async ({ task_id }) => {
+        try {
+            const response = await deleteTask(task_id);
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al eliminar tarea: ${error.message}` }] };
+        }
     }
-}
+);
 
 // ================= CHECKLIST =================
 
-export async function addItemChecklistTasks(taskId, itemName) {
-    try {
-        const response = await habiticaApi.post(`/tasks/${taskId}/checklist`, { text: itemName });
-        return response.data.data;
-    } catch (error) {
-        console.error("Error al añadir ítem al checklist:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "add_checklist_item",
+    {
+        description: "Añade un ítem al checklist de una tarea en Habitica",
+        inputSchema: {
+            task_id: z.string().describe("El ID de la tarea principal en Habitica"),
+            item_text: z.string().describe("El texto o nombre del nuevo ítem para el checklist")
+        }
+    },
+    async ({ task_id, item_text }) => {
+        try {
+            const response = await addItemChecklistTasks(task_id, item_text);
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al añadir ítem: ${error.message}` }] };
+        }
     }
-}
+);
 
-export async function updateItemChecklistTasks(taskId, itemId, itemText) {
-    try {
-        const response = await habiticaApi.put(`/tasks/${taskId}/checklist/${itemId}`, { text: itemText });
-        return response.data.data;
-    } catch (error) {
-        console.error("Error al actualizar ítem del checklist:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "update_checklist_item",
+    {
+        description: "Edita el texto de un ítem del checklist de una tarea",
+        inputSchema: {
+            task_id: z.string().describe("El ID de la tarea"),
+            item_id: z.string().describe("El ID del ítem del checklist"),
+            item_text: z.string().describe("El nuevo texto del ítem")
+        }
+    },
+    async ({ task_id, item_id, item_text }) => {
+        try {
+            const response = await updateItemChecklistTasks(task_id, item_id, item_text);
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al actualizar ítem: ${error.message}` }] };
+        }
     }
-}
+);
 
-export async function deleteItemChecklistTasks(taskId, itemId) {
-    try {
-        const response = await habiticaApi.delete(`/tasks/${taskId}/checklist/${itemId}`);
-        return response.data;
-    } catch (error) {
-        console.error("Error al eliminar ítem del checklist:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "delete_checklist_item",
+    {
+        description: "Elimina un ítem del checklist de una tarea en Habitica",
+        inputSchema: {
+            task_id: z.string().describe("El ID de la tarea principal en Habitica"),
+            item_id: z.string().describe("El ID del ítem en Habitica")
+        }
+    },
+    async ({ task_id, item_id }) => {
+        try {
+            const response = await deleteItemChecklistTasks(task_id, item_id);
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al eliminar ítem: ${error.message}` }] };
+        }
     }
-}
+);
 
-export async function scoreItemChecklistTasks(taskId, itemId) {
-    // POST, no PUT — confirmado en los tests oficiales de Habitica
-    try {
-        const response = await habiticaApi.post(`/tasks/${taskId}/checklist/${itemId}/score`);
-        return response.data.data;
-    } catch (error) {
-        console.error("Error al marcar ítem del checklist:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "score_checklist_item",
+    {
+        description: "Marca o desmarca (toggle) un ítem del checklist como completado",
+        inputSchema: {
+            task_id: z.string().describe("El ID de la tarea"),
+            item_id: z.string().describe("El ID del ítem del checklist")
+        }
+    },
+    async ({ task_id, item_id }) => {
+        try {
+            const response = await scoreItemChecklistTasks(task_id, item_id);
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al marcar ítem: ${error.message}` }] };
+        }
     }
-}
+);
 
 // ================= HÁBITOS =================
 
-export async function getHabits() {
-    try {
-        const response = await habiticaApi.get("/tasks/user?type=habits");
-        return response.data.data;
-    } catch (error) {
-        console.error("Error al obtener hábitos:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "get_habits",
+    {
+        description: "Obtiene todos los hábitos del usuario",
+        inputSchema: {}
+    },
+    async () => {
+        try {
+            const habits = await getHabits();
+            return { content: [{ type: "text", text: JSON.stringify(habits, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al obtener hábitos: ${error.message}` }] };
+        }
     }
-}
+);
 
-export async function createHabit({ text, notes, up = true, down = true, priority }) {
-    try {
-        const response = await habiticaApi.post("/tasks/user", {
-            type: "habit",
-            text,
-            notes,
-            up,
-            down,
-            priority
-        });
-        return response.data.data;
-    } catch (error) {
-        console.error("Error al crear hábito:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "create_habit",
+    {
+        description: "Crea un nuevo hábito en Habitica",
+        inputSchema: {
+            text: z.string().describe("Título del hábito"),
+            notes: z.string().optional().describe("Notas del hábito"),
+            up: z.boolean().optional().describe("Si permite marcar el '+' (hábito positivo)"),
+            down: z.boolean().optional().describe("Si permite marcar el '-' (hábito negativo)"),
+            priority: z.number().optional().describe("Dificultad: 0.1, 1, 1.5 o 2")
+        }
+    },
+    async (args) => {
+        try {
+            const response = await createHabit(args);
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al crear hábito: ${error.message}` }] };
+        }
     }
-}
+);
 
-export async function updateHabit(taskId, fields) {
-    try {
-        const response = await habiticaApi.put(`/tasks/${taskId}`, fields);
-        return response.data.data;
-    } catch (error) {
-        console.error("Error al actualizar hábito:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "update_habit",
+    {
+        description: "Actualiza un hábito existente",
+        inputSchema: {
+            task_id: z.string().describe("ID del hábito"),
+            text: z.string().optional().describe("Nuevo título"),
+            notes: z.string().optional().describe("Nuevas notas"),
+            up: z.boolean().optional(),
+            down: z.boolean().optional(),
+            priority: z.number().optional()
+        }
+    },
+    async ({ task_id, ...fields }) => {
+        try {
+            const response = await updateHabit(task_id, fields);
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al actualizar hábito: ${error.message}` }] };
+        }
     }
-}
+);
 
-export async function scoreHabit(taskId, direction) {
-    // direction: "up" o "down"
-    try {
-        const response = await habiticaApi.post(`/tasks/${taskId}/score/${direction}`);
-        return response.data.data;
-    } catch (error) {
-        console.error("Error al puntuar hábito:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "score_habit",
+    {
+        description: "Marca un hábito con + (up) o - (down)",
+        inputSchema: {
+            task_id: z.string().describe("ID del hábito"),
+            direction: z.enum(["up", "down"]).describe("up para '+', down para '-'")
+        }
+    },
+    async ({ task_id, direction }) => {
+        try {
+            const response = await scoreHabit(task_id, direction);
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al puntuar hábito: ${error.message}` }] };
+        }
     }
-}
+);
 
 // ================= DAILIES (TAREAS DIARIAS) =================
 
-export async function getDailies() {
-    try {
-        const response = await habiticaApi.get("/tasks/user?type=dailys");
-        return response.data.data;
-    } catch (error) {
-        console.error("Error al obtener dailies:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "get_dailies",
+    {
+        description: "Obtiene todas las tareas diarias (dailies) del usuario",
+        inputSchema: {}
+    },
+    async () => {
+        try {
+            const dailies = await getDailies();
+            return { content: [{ type: "text", text: JSON.stringify(dailies, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al obtener dailies: ${error.message}` }] };
+        }
     }
-}
+);
 
-export async function createDaily({ text, notes, priority, frequency = "daily", everyX = 1 }) {
-    try {
-        const response = await habiticaApi.post("/tasks/user", {
-            type: "daily",
-            text,
-            notes,
-            priority,
-            frequency, // "daily" o "weekly"
-            everyX     // cada cuántos días/semanas se repite
-        });
-        return response.data.data;
-    } catch (error) {
-        console.error("Error al crear daily:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "create_daily",
+    {
+        description: "Crea una nueva tarea diaria (daily) en Habitica",
+        inputSchema: {
+            text: z.string().describe("Título de la daily"),
+            notes: z.string().optional().describe("Notas de la daily"),
+            priority: z.number().optional().describe("Dificultad: 0.1, 1, 1.5 o 2"),
+            frequency: z.enum(["daily", "weekly"]).optional().describe("Frecuencia de repetición (por defecto 'daily', todos los días)"),
+            everyX: z.number().optional().describe("Cada cuántos días/semanas se repite (por defecto 1)")
+        }
+    },
+    async (args) => {
+        try {
+            const response = await createDaily(args);
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al crear daily: ${error.message}` }] };
+        }
     }
-}
+);
 
-export async function updateDaily(taskId, fields) {
-    try {
-        const response = await habiticaApi.put(`/tasks/${taskId}`, fields);
-        return response.data.data;
-    } catch (error) {
-        console.error("Error al actualizar daily:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "update_daily",
+    {
+        description: "Actualiza una tarea diaria existente",
+        inputSchema: {
+            task_id: z.string().describe("ID de la daily"),
+            text: z.string().optional().describe("Nuevo título"),
+            notes: z.string().optional().describe("Nuevas notas"),
+            priority: z.number().optional()
+        }
+    },
+    async ({ task_id, ...fields }) => {
+        try {
+            const response = await updateDaily(task_id, fields);
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al actualizar daily: ${error.message}` }] };
+        }
     }
-}
+);
 
-export async function scoreDaily(taskId, direction = "up") {
-    // direction: "up" (completar) o "down" (descompletar)
-    try {
-        const response = await habiticaApi.post(`/tasks/${taskId}/score/${direction}`);
-        return response.data.data;
-    } catch (error) {
-        console.error("Error al puntuar daily:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "score_daily",
+    {
+        description: "Marca una daily como completada (up) o la descompleta (down)",
+        inputSchema: {
+            task_id: z.string().describe("ID de la daily"),
+            direction: z.enum(["up", "down"]).describe("up para completar, down para descompletar")
+        }
+    },
+    async ({ task_id, direction }) => {
+        try {
+            const response = await scoreDaily(task_id, direction);
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al puntuar daily: ${error.message}` }] };
+        }
     }
-}
+);
 
 // ================= TAREAS PENDIENTES (TODOS) =================
 
-export async function getTodos() {
-    try {
-        const response = await habiticaApi.get("/tasks/user?type=todos");
-        return response.data.data;
-    } catch (error) {
-        console.error("Error al obtener tareas pendientes:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "get_todos",
+    {
+        description: "Obtiene todas las tareas pendientes (todos) del usuario",
+        inputSchema: {}
+    },
+    async () => {
+        try {
+            const todos = await getTodos();
+            return { content: [{ type: "text", text: JSON.stringify(todos, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al obtener tareas pendientes: ${error.message}` }] };
+        }
     }
-}
+);
 
-export async function createTodo({ text, notes, priority, date }) {
-    try {
-        const response = await habiticaApi.post("/tasks/user", {
-            type: "todo",
-            text,
-            notes,
-            priority,
-            date
-        });
-        return response.data.data;
-    } catch (error) {
-        console.error("Error al crear tarea pendiente:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "create_todo",
+    {
+        description: "Crea una nueva tarea pendiente",
+        inputSchema: {
+            text: z.string().describe("Título de la tarea"),
+            notes: z.string().optional().describe("Notas de la tarea"),
+            priority: z.number().optional().describe("Dificultad: 0.1, 1, 1.5 o 2"),
+            date: z.string().optional().describe("Fecha límite en formato ISO (ej: 2026-09-10)")
+        }
+    },
+    async (args) => {
+        try {
+            const response = await createTodo(args);
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al crear tarea pendiente: ${error.message}` }] };
+        }
     }
-}
+);
 
-export async function updateTodo(taskId, fields) {
-    try {
-        const response = await habiticaApi.put(`/tasks/${taskId}`, fields);
-        return response.data.data;
-    } catch (error) {
-        console.error("Error al actualizar tarea pendiente:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "update_todo",
+    {
+        description: "Actualiza una tarea pendiente existente",
+        inputSchema: {
+            task_id: z.string().describe("ID de la tarea"),
+            text: z.string().optional().describe("Nuevo título"),
+            notes: z.string().optional().describe("Nuevas notas"),
+            priority: z.number().optional(),
+            date: z.string().optional()
+        }
+    },
+    async ({ task_id, ...fields }) => {
+        try {
+            const response = await updateTodo(task_id, fields);
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al actualizar tarea pendiente: ${error.message}` }] };
+        }
     }
-}
+);
 
-export async function completeTodo(taskId) {
-    try {
-        const response = await habiticaApi.post(`/tasks/${taskId}/score/up`);
-        return response.data.data;
-    } catch (error) {
-        console.error("Error al completar tarea pendiente:", error.response?.data || error.message);
-        throw error;
+server.registerTool(
+    "complete_todo",
+    {
+        description: "Marca una tarea pendiente como completada",
+        inputSchema: {
+            task_id: z.string().describe("ID de la tarea a completar")
+        }
+    },
+    async ({ task_id }) => {
+        try {
+            const response = await completeTodo(task_id);
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al completar tarea pendiente: ${error.message}` }] };
+        }
     }
-}
+);
+
+// ================= SERVIDOR HTTP =================
+
+const mcpHandler = createMcpHandler(() => server);
+const handler = toNodeHandler(mcpHandler);
+const httpServer = http.createServer(handler);
+
+httpServer.listen(3000, () => {
+    console.error("Habitica MCP ejecutándose en http://localhost:3000/mcp");
+});
