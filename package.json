@@ -1,0 +1,22 @@
+{
+  "name": "habitica-api",
+  "version": "1.0.0",
+  "description": "this is for create a conection whit habitica",
+  "license": "ISC",
+  "author": "link",
+  "type": "module",
+  "main": "axios.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/node": "^2.0.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "axios": "^1.20.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "zod": "^4.5.4"
+  }
+}
