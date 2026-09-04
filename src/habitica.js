@@ -135,6 +135,56 @@ export async function scoreHabit(taskId, direction) {
     }
 }
 
+// ================= DAILIES (TAREAS DIARIAS) =================
+
+export async function getDailies() {
+    try {
+        const response = await habiticaApi.get("/tasks/user?type=dailys");
+        return response.data.data;
+    } catch (error) {
+        console.error("Error al obtener dailies:", error.response?.data || error.message);
+        throw error;
+    }
+}
+
+export async function createDaily({ text, notes, priority, frequency = "daily", everyX = 1 }) {
+    try {
+        const response = await habiticaApi.post("/tasks/user", {
+            type: "daily",
+            text,
+            notes,
+            priority,
+            frequency, // "daily" o "weekly"
+            everyX     // cada cuántos días/semanas se repite
+        });
+        return response.data.data;
+    } catch (error) {
+        console.error("Error al crear daily:", error.response?.data || error.message);
+        throw error;
+    }
+}
+
+export async function updateDaily(taskId, fields) {
+    try {
+        const response = await habiticaApi.put(`/tasks/${taskId}`, fields);
+        return response.data.data;
+    } catch (error) {
+        console.error("Error al actualizar daily:", error.response?.data || error.message);
+        throw error;
+    }
+}
+
+export async function scoreDaily(taskId, direction = "up") {
+    // direction: "up" (completar) o "down" (descompletar)
+    try {
+        const response = await habiticaApi.post(`/tasks/${taskId}/score/${direction}`);
+        return response.data.data;
+    } catch (error) {
+        console.error("Error al puntuar daily:", error.response?.data || error.message);
+        throw error;
+    }
+}
+
 // ================= TAREAS PENDIENTES (TODOS) =================
 
 export async function getTodos() {
