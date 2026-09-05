@@ -285,12 +285,21 @@ server.registerTool(
 server.registerTool(
     "update_daily",
     {
-        description: "Actualiza una tarea diaria existente",
+        description: "Actualiza una tarea diaria existente, incluyendo días de repetición",
         inputSchema: {
             task_id: z.string().describe("ID de la daily"),
             text: z.string().optional().describe("Nuevo título"),
             notes: z.string().optional().describe("Nuevas notas"),
-            priority: z.number().optional()
+            priority: z.number().optional(),
+            repeat: z.object({
+                su: z.boolean().optional(),
+                m: z.boolean().optional(),
+                t: z.boolean().optional(),
+                w: z.boolean().optional(),
+                th: z.boolean().optional(),
+                f: z.boolean().optional(),
+                s: z.boolean().optional()
+            }).optional().describe("Días de la semana en que se repite. Sobrescribe completamente el objeto repeat existente.")
         }
     },
     async ({ task_id, ...fields }) => {
