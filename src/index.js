@@ -178,7 +178,8 @@ server.registerTool(
             notes: z.string().optional().describe("Notas del hábito"),
             up: z.boolean().optional().describe("Si permite marcar el '+' (hábito positivo)"),
             down: z.boolean().optional().describe("Si permite marcar el '-' (hábito negativo)"),
-            priority: z.number().optional().describe("Dificultad: 0.1, 1, 1.5 o 2")
+            priority: z.number().optional().describe("Dificultad: 0.1, 1, 1.5 o 2"),
+            tags: z.array(z.string()).optional().describe("Array de IDs de tags a asignar al hábito")
         }
     },
     async (args) => {
@@ -201,7 +202,8 @@ server.registerTool(
             notes: z.string().optional().describe("Nuevas notas"),
             up: z.boolean().optional(),
             down: z.boolean().optional(),
-            priority: z.number().optional()
+            priority: z.number().optional(),
+            tags: z.array(z.string()).optional().describe("Array de IDs de tags a asignar al hábito")
         }
     },
     async ({ task_id, ...fields }) => {
@@ -270,7 +272,8 @@ server.registerTool(
                 f: z.boolean().optional(),
                 s: z.boolean().optional()
             }).optional().describe("Días de la semana en que se repite (solo aplica si frequency es 'weekly'). Si se omite, se repite todos los días."),
-            reminders: z.array(z.string()).optional().describe("Horas de recordatorio en formato 'HH:MM' (24h), ej: ['05:20']")
+            reminders: z.array(z.string()).optional().describe("Horas de recordatorio en formato 'HH:MM' (24h), ej: ['05:20']"),
+            tags: z.array(z.string()).optional().describe("Array de IDs de tags a asignar a la daily")
         }
     },
     async (args) => {
@@ -286,7 +289,7 @@ server.registerTool(
 server.registerTool(
     "update_daily",
     {
-        description: "Actualiza una tarea diaria existente, incluyendo días de repetición",
+        description: "Actualiza una tarea diaria existente, incluyendo días de repetición y tags",
         inputSchema: {
             task_id: z.string().describe("ID de la daily"),
             text: z.string().optional().describe("Nuevo título"),
@@ -300,7 +303,8 @@ server.registerTool(
                 th: z.boolean().optional(),
                 f: z.boolean().optional(),
                 s: z.boolean().optional()
-            }).optional().describe("Días de la semana en que se repite. Sobrescribe completamente el objeto repeat existente.")
+            }).optional().describe("Días de la semana en que se repite. Sobrescribe completamente el objeto repeat existente."),
+            tags: z.array(z.string()).optional().describe("Array de IDs de tags a asignar a la daily")
         }
     },
     async ({ task_id, ...fields }) => {
@@ -358,7 +362,8 @@ server.registerTool(
             text: z.string().describe("Título de la tarea"),
             notes: z.string().optional().describe("Notas de la tarea"),
             priority: z.number().optional().describe("Dificultad: 0.1, 1, 1.5 o 2"),
-            date: z.string().optional().describe("Fecha límite en formato ISO (ej: 2026-09-10)")
+            date: z.string().optional().describe("Fecha límite en formato ISO (ej: 2026-09-10)"),
+            tags: z.array(z.string()).optional().describe("Array de IDs de tags a asignar a la tarea")
         }
     },
     async (args) => {
@@ -380,7 +385,8 @@ server.registerTool(
             text: z.string().optional().describe("Nuevo título"),
             notes: z.string().optional().describe("Nuevas notas"),
             priority: z.number().optional(),
-            date: z.string().optional()
+            date: z.string().optional(),
+            tags: z.array(z.string()).optional().describe("Array de IDs de tags a asignar a la tarea")
         }
     },
     async ({ task_id, ...fields }) => {
