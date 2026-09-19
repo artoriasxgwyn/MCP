@@ -6,7 +6,8 @@ import {
     addItemChecklistTasks, updateItemChecklistTasks, deleteItemChecklistTasks, scoreItemChecklistTasks,
     getHabits, createHabit, updateHabit, scoreHabit,
     getTodos, createTodo, updateTodo, completeTodo,
-    getDailies, createDaily, updateDaily, scoreDaily
+    getDailies, createDaily, updateDaily, scoreDaily,
+    getTags, getTag, createTag, updateTag, deleteTag
 } from "./habitica.js";
 
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
@@ -406,6 +407,97 @@ server.registerTool(
             return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
         } catch (error) {
             return { content: [{ type: "text", text: `Error al completar tarea pendiente: ${error.message}` }] };
+        }
+    }
+);
+
+// ================= TAGS =================
+
+server.registerTool(
+    "get_tags",
+    {
+        description: "Obtiene todos los tags del usuario desde Habitica",
+        inputSchema: {}
+    },
+    async () => {
+        try {
+            const tags = await getTags();
+            return { content: [{ type: "text", text: JSON.stringify(tags, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al obtener tags: ${error.message}` }] };
+        }
+    }
+);
+
+server.registerTool(
+    "get_tag",
+    {
+        description: "Obtiene un tag específico por su ID",
+        inputSchema: {
+            tag_id: z.string().describe("El ID del tag")
+        }
+    },
+    async ({ tag_id }) => {
+        try {
+            const response = await getTag(tag_id);
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al obtener tag: ${error.message}` }] };
+        }
+    }
+);
+
+server.registerTool(
+    "create_tag",
+    {
+        description: "Crea un nuevo tag en Habitica",
+        inputSchema: {
+            name: z.string().describe("Nombre del tag (ej: 'Trabajo', 'Salud', 'Aprendizaje')")
+        }
+    },
+    async ({ name }) => {
+        try {
+            const response = await createTag({ name });
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al crear tag: ${error.message}` }] };
+        }
+    }
+);
+
+server.registerTool(
+    "update_tag",
+    {
+        description: "Actualiza el nombre de un tag existente",
+        inputSchema: {
+            tag_id: z.string().describe("El ID del tag a actualizar"),
+            name: z.string().describe("El nuevo nombre del tag")
+        }
+    },
+    async ({ tag_id, name }) => {
+        try {
+            const response = await updateTag(tag_id, { name });
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al actualizar tag: ${error.message}` }] };
+        }
+    }
+);
+
+server.registerTool(
+    "delete_tag",
+    {
+        description: "Elimina un tag de Habitica",
+        inputSchema: {
+            tag_id: z.string().describe("El ID del tag a eliminar")
+        }
+    },
+    async ({ tag_id }) => {
+        try {
+            const response = await deleteTag(tag_id);
+            return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Error al eliminar tag: ${error.message}` }] };
         }
     }
 );

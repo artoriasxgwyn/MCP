@@ -251,3 +251,55 @@ export async function completeTodo(taskId) {
         throw error;
     }
 }
+
+// ================= TAGS =================
+
+export async function getTags() {
+    try {
+        const response = await habiticaApi.get("/tags");
+        return response.data.data;
+    } catch (error) {
+        console.error("Error al obtener tags:", error.response?.data || error.message);
+        throw error;
+    }
+}
+
+export async function getTag(tagId) {
+    try {
+        const response = await habiticaApi.get(`/tags/${tagId}`);
+        return response.data.data;
+    } catch (error) {
+        console.error("Error al obtener tag:", error.response?.data || error.message);
+        throw error;
+    }
+}
+
+export async function createTag({ name }) {
+    try {
+        const response = await habiticaApi.post("/tags", { name });
+        return response.data.data;
+    } catch (error) {
+        console.error("Error al crear tag:", error.response?.data || error.message);
+        throw error;
+    }
+}
+
+export async function updateTag(tagId, { name }) {
+    try {
+        const response = await habiticaApi.put(`/tags/${tagId}`, { name });
+        return response.data.data;
+    } catch (error) {
+        console.error("Error al actualizar tag:", error.response?.data || error.message);
+        throw error;
+    }
+}
+
+export async function deleteTag(tagId) {
+    try {
+        const response = await habiticaApi.delete(`/tags/${tagId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error al eliminar tag:", error.response?.data || error.message);
+        throw error;
+    }
+}
