@@ -1,14 +1,4 @@
-import "dotenv/config";
-import axios from "axios";
-
-const habiticaApi = axios.create({
-    baseURL: "https://habitica.com/api/v3/",
-    headers: {
-        "x-api-user": process.env.user_id,
-        "x-api-key": process.env.token,
-        "x-client": `${process.env.user_id}-mi-app`
-    }
-});
+import { habiticaApi } from "../config/client.js";
 
 // ================= TAREAS (GENÉRICO) =================
 
