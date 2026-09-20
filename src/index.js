@@ -514,6 +514,6 @@ const mcpHandler = createMcpHandler(() => server);
 const handler = toNodeHandler(mcpHandler);
 const httpServer = http.createServer(handler);
 
-httpServer.listen(3000, () => {
-    console.error("Habitica MCP ejecutándose en http://localhost:3000/mcp");
+httpServer.listen(process.env.PORT, () => {
+    console.error(`Habitica MCP ejecutándose en http://localhost:${process.env.PORT}/mcp`);
 });
